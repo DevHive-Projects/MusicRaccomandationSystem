@@ -9,7 +9,7 @@ root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(root_dir)
 from Error.dataclass.ProcessingResultBatch import ProcessingResults
 from Error.dataclass.BatchError import BatchError
-from Error.dataclass.BachErrorCollection import BatchErrorCollection
+from Error.dataclass.BatchErrorCollection import BatchErrorCollection
 from interfaces.BatchProcessorInterface import BatchProcessorInterface
 
 from typing import List, Dict
@@ -168,14 +168,14 @@ class BatchProcessor(BatchProcessorInterface):
                         error = self.create_error(e, batch_data['batch_index'], os.getpid(), 1, 
                                                   {'phase' : 'Future processing'})
                         self.error_collection.add_error(error)
-                        logging.error(f'Errore di preelaborazione del batch {batch_data['batch_index']},
-                                      extra = {'errore_details': error.to_dict()}')
+                        logging.error(f'Errore di preelaborazione del batch {batch_data["batch_index"]}',
+                                      extra = {'errore_details': error.to_dict()})
         except Exception as e:
             error = self.create_error(
                             e, batch_data['batch_index'], os.getpid(), 1,
                             {'phase' : 'parallel processing'}
                         )
             self.error_collection.add_error(error)
-            logging.error(f'Errore di elaborazione parallela del batch {batch_data['batch_index']},
-                            extra = {'errore_details': error.to_dict()}')
+            logging.error(f'Errore di elaborazione parallela del batch {batch_data["batch_index"]}',
+                            extra = {'errore_details': error.to_dict()})
             
