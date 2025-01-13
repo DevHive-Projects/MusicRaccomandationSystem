@@ -29,14 +29,13 @@ class BatchProcessor(BatchProcessorInterface):
             cls.instance._initialize = False
         return cls.instance
 
-    def __init__(self,max_retries, retry_delay, json_manager):
+    def __init__(self,max_retries, retry_delay):
         if not self._initialize:
-            self.initialize(max_retries, retry_delay, json_manager)
+            self.initialize(max_retries, retry_delay)
     
-    def initialize(self, max_retries, retry_delay, json_manager):
+    def initialize(self, max_retries, retry_delay):
         self.max_retries = max_retries
         self.retry_delay = retry_delay
-        self.json_manager = json_manager
 
         self.num_workers = cpu_count()
         self.manager = Manager()
@@ -138,10 +137,10 @@ class BatchProcessor(BatchProcessorInterface):
         )
     
 
-    def process_all_batch(self, batches, start_from_batch: int):
+    def process_all_batch(self, batches, start_from_batch: int, json_manager):
         #self.batch_errors.set_total_batches(len(batches))
         results = []
-
+        self.json_manager = json_manager
         batch_data =[
             {
                 'batch_index' : i+start_from_batch,
@@ -151,6 +150,9 @@ class BatchProcessor(BatchProcessorInterface):
         ]
 
         try:
+            # for batch in batch_data:
+            #     self.process_batch_with_retry(batch)
+
             with ThreadPoolExecutor(max_workers=self.num_workers) as executor:
                 future_to_batch = {
                     executor.submit(self.process_batch_with_retry, batch) : batch
@@ -164,6 +166,7 @@ class BatchProcessor(BatchProcessorInterface):
                         if result.success:
                             logger.info(f'Batch {result.batch_index} processato con successo')
                             results.append(result)
+
                     except Exception as e:
                         error = self.create_error(e, batch_data['batch_index'], os.getpid(), 1, 
                                                   {'phase' : 'Future processing'})
@@ -178,4 +181,6 @@ class BatchProcessor(BatchProcessorInterface):
             self.error_collection.add_error(error)
             logging.error(f'Errore di elaborazione parallela del batch {batch_data["batch_index"]}',
                             extra = {'errore_details': error.to_dict()})
-            
+    
+        return results
+   

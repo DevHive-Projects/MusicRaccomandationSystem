@@ -35,7 +35,7 @@ class JsonManager(JsonManagerInterface):
         self.json_validator = JsonValidator()
         self.batch_size = batch_size
         self.dataframe : Optional[pd.DateFrame] = None
-        self.batch_processor = BatchProcessor(2,5, self.get_instance())
+        self.batch_processor = BatchProcessor(2,5)
 
         self._initialize = True 
 
@@ -57,6 +57,7 @@ class JsonManager(JsonManagerInterface):
             results = self.batch_processor.process_all_batch(
                 batches = batches,
                 start_from_batch = 0,
+                json_manager = self.get_instance()
             )
 
             all_processed_songs = []
@@ -79,23 +80,26 @@ class JsonManager(JsonManagerInterface):
         """
 
         processed_songs = []
-        batch_songs = batch_data['data']
+        batch_songs = batch_data
 
         for song in batch_songs:
             try:
                 processed_song = self.process_single_song(song)
                 if processed_song:
                     processed_songs.append(processed_song)
+                elif processed_song is not None:
+                    logger.warning(f'prodess_single_song restituisce un tipo inatteso : {type(processed_song)}')
             except Exception as e:
                 logger.error(f'Errore nel processamente della canzone {str(e)}')
+        
+        return processed_songs
 
-    @classmethod
-    def process_single_song(self, song : List[Dict]) -> List[Dict]:
+    def process_single_song(self, song : List[Dict]):
         """
         Processa una singola canzone, convertendo da JSON a formato tabellare.
         """
 
-        song_validate_status = self.json_validator(song)
+        song_validate_status = self.json_validator.validate_song(song)
 
         if song_validate_status == True:
 
